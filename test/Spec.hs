@@ -30,7 +30,8 @@ testBuild :: Build
 testBuild =
   Build
     { pipeline = testPipeline,
-      state = BuildReady
+      state = BuildReady,
+      completedSteps = mempty
     }
 
 main :: IO ()

@@ -1,6 +1,9 @@
 module Core where
 
 import RIO
+import qualified RIO.List as List
+import qualified RIO.Map as Map
+import qualified RIO.NonEmpty as NE
 
 data Pipeline = Pipeline
   { steps :: NonEmpty Step
@@ -16,14 +19,37 @@ data Step = Step
 
 data Build = Build
   { pipeline :: Pipeline,
-    state :: BuildState
+    state :: BuildState,
+    completedSteps :: Map StepName StepResult
   }
   deriving (Eq, Show)
 
+data StepResult
+  = StepFailed ContainerExitCode
+  | StepSucceeded
+  deriving (Eq, Show)
+
+newtype ContainerExitCode = ContainerExitCode Int
+  deriving (Eq, Show)
+
+exitCodeToInt :: ContainerExitCode -> Int
+exitCodeToInt (ContainerExitCode n) = n
+
+exitCodeToStepResult :: ContainerExitCode -> StepResult
+exitCodeToStepResult exit =
+  if exitCodeToInt exit == 0
+    then StepSucceeded
+    else StepFailed exit
+
 data BuildState
   = BuildReady
-  | BuildRunning
+  | BuildRunning BuildRunningState
   | BuildFinished BuildResult
+  deriving (Eq, Show)
+
+data BuildRunningState = BuildRunningState
+  { step :: StepName
+  }
   deriving (Eq, Show)
 
 data BuildResult
@@ -32,7 +58,7 @@ data BuildResult
   deriving (Eq, Show)
 
 newtype StepName = StepName Text
-  deriving (Eq, Show)
+  deriving (Eq, Show, Ord)
 
 newtype Image = Image Text
   deriving (Eq, Show)
@@ -46,6 +72,31 @@ imageToText (Image image) = image
 progress :: Build -> IO Build
 progress build =
   case build.state of
-    BuildReady -> undefined
-    BuildRunning -> undefined
+    BuildReady ->
+      case buildHasNextStep build of
+        Left result ->
+          pure $ build {state = BuildFinished result}
+        Right step -> do
+          let s = BuildRunningState {step = step.name}
+          pure $ build {state = BuildRunning s}
+    BuildRunning state -> do
+      let exit = ContainerExitCode 0
+          result = exitCodeToStepResult exit
+      pure
+        build
+          { state = BuildReady,
+            completedSteps = Map.insert state.step result build.completedSteps
+          }
     BuildFinished _ -> pure build
+
+buildHasNextStep :: Build -> Either BuildResult Step
+buildHasNextStep build =
+  if allSucceeded
+    then case nextStep of
+      Just step -> Right step
+      Nothing -> Left BuildSucceeded
+    else Left BuildFailed
+  where
+    allSucceeded = List.all ((==) StepSucceeded) build.completedSteps
+    nextStep = List.find f build.pipeline.steps
+    f step = not $ Map.member step.name build.completedSteps
