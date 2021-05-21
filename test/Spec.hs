@@ -3,6 +3,7 @@ module Main where
 import Core
 import RIO
 import qualified RIO.NonEmpty.Partial as NonEmpty.Partial
+import qualified Docker
 
 -- Helper Functions
 
@@ -10,7 +11,7 @@ makeStep :: Text -> Text -> [Text] -> Step
 makeStep name image commands =
   Step
     { name = StepName name,
-      image = Image image,
+      image = Docker.Image image,
       commands = NonEmpty.Partial.fromList commands
     }
 
