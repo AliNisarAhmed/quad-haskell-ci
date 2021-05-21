@@ -48,6 +48,19 @@ parseResponse res parser = do
     Left e -> throwString e
     Right status -> pure status
 
+startContainer :: ContainerId -> IO ()
+startContainer container =
+  do
+    manager <- Socket.newManager "/var/run/docker.sock"
+    let path = "/v1.40/containers/" <> containerIdToText container <> "/start"
+    let req =
+          HTTP.defaultRequest
+            & HTTP.setRequestManager manager
+            & HTTP.setRequestPath (encodeUtf8 path)
+            & HTTP.setRequestMethod "POST"
+    void $ HTTP.httpBS req
+
+-- -------------
 newtype Image = Image Text
   deriving (Eq, Show)
 
