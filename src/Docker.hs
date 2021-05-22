@@ -74,8 +74,26 @@ createService = do
     Service
       { createContainer = createContainer_ makeReq,
         startContainer = startContainer_ makeReq,
-        containerStatus = undefined
+        containerStatus = containerStatus_ makeReq
       }
+
+containerStatus_ :: RequestBuilder -> ContainerId -> IO ContainerStatus
+containerStatus_ makeReq container = do
+  let parser = Aeson.withObject "container-inspect" $ \o -> do
+        state <- o .: "State"
+        status <- state .: "Status"
+        case status of
+          "running" -> pure ContainerRunning
+          "exited" -> do
+            code <- state .: "ExitCode"
+            pure $ ContainerExited (ContainerExitCode code)
+          other -> pure $ ContainerOther other
+  let req =
+        makeReq $
+          "/containers/" <> containerIdToText container <> "/json"
+
+  res <- HTTP.httpBS req
+  parseResponse res parser
 
 -- -------------
 newtype Image = Image Text
