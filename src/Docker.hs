@@ -7,6 +7,8 @@ import qualified Network.HTTP.Simple as HTTP
 import RIO
 import qualified Socket
 
+type RequestBuilder = Text -> HTTP.Request
+
 data CreateContainerOptions = CreateContainerOptions {image :: Image}
 
 newtype ContainerId = ContainerId Text
@@ -15,9 +17,8 @@ newtype ContainerId = ContainerId Text
 containerIdToText :: ContainerId -> Text
 containerIdToText (ContainerId c) = c
 
-createContainer_ :: CreateContainerOptions -> IO ContainerId
-createContainer_ options = do
-  manager <- Socket.newManager "/var/run/docker.sock"
+createContainer_ :: RequestBuilder -> CreateContainerOptions -> IO ContainerId
+createContainer_ makeReq options = do
   let image = imageToText options.image
   let body =
         Aeson.object
@@ -28,9 +29,7 @@ createContainer_ options = do
             ("Entrypoint", Aeson.toJSON [Aeson.String "/bin/sh", "-c"])
           ]
   let req =
-        HTTP.defaultRequest
-          & HTTP.setRequestManager manager
-          & HTTP.setRequestPath "/v1.40/containers/create"
+        makeReq "/containers/create"
           & HTTP.setRequestMethod "POST"
           & HTTP.setRequestBodyJSON body
   let parser = Aeson.withObject "create-container" $ \o -> do
@@ -48,15 +47,12 @@ parseResponse res parser = do
     Left e -> throwString e
     Right status -> pure status
 
-startContainer_ :: ContainerId -> IO ()
-startContainer_ container =
+startContainer_ :: RequestBuilder -> ContainerId -> IO ()
+startContainer_ makeReq container =
   do
-    manager <- Socket.newManager "/var/run/docker.sock"
-    let path = "/v1.40/containers/" <> containerIdToText container <> "/start"
+    let path = "/containers/" <> containerIdToText container <> "/start"
     let req =
-          HTTP.defaultRequest
-            & HTTP.setRequestManager manager
-            & HTTP.setRequestPath (encodeUtf8 path)
+          makeReq path
             & HTTP.setRequestMethod "POST"
     void $ HTTP.httpBS req
 
@@ -68,10 +64,16 @@ data Service = Service
 
 createService :: IO Service
 createService = do
+  manager <- Socket.newManager "/var/run/docker.sock"
+  let makeReq :: RequestBuilder
+      makeReq path =
+        HTTP.defaultRequest
+          & HTTP.setRequestPath (encodeUtf8 $ "/v1.40" <> path)
+          & HTTP.setRequestManager manager
   pure
     Service
-      { createContainer = createContainer_,
-        startContainer = startContainer_,
+      { createContainer = createContainer_ makeReq,
+        startContainer = startContainer_ makeReq,
         containerStatus = undefined
       }
 
