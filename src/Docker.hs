@@ -9,7 +9,7 @@ import qualified Socket
 
 type RequestBuilder = Text -> HTTP.Request
 
-data CreateContainerOptions = CreateContainerOptions {image :: Image}
+data CreateContainerOptions = CreateContainerOptions {image :: Image, script :: Text}
 
 newtype ContainerId = ContainerId Text
   deriving (Eq, Show)
@@ -25,8 +25,9 @@ createContainer_ makeReq options = do
           [ ("Image", Aeson.toJSON image),
             ("Tty", Aeson.toJSON True),
             ("Labels", Aeson.object [("quad", "")]),
-            ("Cmd", "echo hello"),
-            ("Entrypoint", Aeson.toJSON [Aeson.String "/bin/sh", "-c"])
+            ("Entrypoint", Aeson.toJSON [Aeson.String "/bin/sh", "-c"]),
+            ("Cmd", "echo \"$QUAD_SCRIPT\" | /bin/sh"),
+            ("Env", Aeson.toJSON ["QUAD_SCRIPT=" <> options.script])
           ]
   let req =
         makeReq "/containers/create"
