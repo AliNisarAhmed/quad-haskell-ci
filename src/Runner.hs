@@ -24,4 +24,5 @@ runBuild_ docker build = do
 
 prepareBuild_ :: Docker.Service -> Pipeline -> IO Build
 prepareBuild_ docker pipeline = do
-  pure Build {pipeline = pipeline, state = BuildReady, completedSteps = mempty}
+  volume <- docker.createVolume
+  pure Build {pipeline = pipeline, state = BuildReady, completedSteps = mempty, volume = volume}

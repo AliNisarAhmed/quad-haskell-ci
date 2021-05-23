@@ -22,7 +22,8 @@ data Step = Step
 data Build = Build
   { pipeline :: Pipeline,
     state :: BuildState,
-    completedSteps :: Map StepName StepResult
+    completedSteps :: Map StepName StepResult,
+    volume :: Docker.Volume
   }
   deriving (Eq, Show)
 

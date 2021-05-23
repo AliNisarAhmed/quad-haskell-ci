@@ -57,10 +57,13 @@ startContainer_ makeReq container =
             & HTTP.setRequestMethod "POST"
     void $ HTTP.httpBS req
 
+---- Service ----
+
 data Service = Service
   { createContainer :: CreateContainerOptions -> IO ContainerId,
     startContainer :: ContainerId -> IO (),
-    containerStatus :: ContainerId -> IO ContainerStatus
+    containerStatus :: ContainerId -> IO ContainerStatus,
+    createVolume :: IO Volume
   }
 
 createService :: IO Service
@@ -75,7 +78,8 @@ createService = do
     Service
       { createContainer = createContainer_ makeReq,
         startContainer = startContainer_ makeReq,
-        containerStatus = containerStatus_ makeReq
+        containerStatus = containerStatus_ makeReq,
+        createVolume = createVolume_ makeReq
       }
 
 containerStatus_ :: RequestBuilder -> ContainerId -> IO ContainerStatus
@@ -92,6 +96,20 @@ containerStatus_ makeReq container = do
   let req =
         makeReq $
           "/containers/" <> containerIdToText container <> "/json"
+
+  res <- HTTP.httpBS req
+  parseResponse res parser
+
+createVolume_ :: RequestBuilder -> IO Volume
+createVolume_ makeReq = do
+  let body = Aeson.object [("Labels", Aeson.object [("quad", "")])]
+  let req =
+        makeReq "/volumes/create"
+          & HTTP.setRequestMethod "POST"
+          & HTTP.setRequestBodyJSON body
+  let parser = Aeson.withObject "create-volume" $ \o -> do
+        name <- o .: "Name"
+        pure $ Volume name
 
   res <- HTTP.httpBS req
   parseResponse res parser
@@ -114,3 +132,9 @@ data ContainerStatus
   | ContainerExited ContainerExitCode
   | ContainerOther Text
   deriving (Eq, Show)
+
+newtype Volume = Volume Text
+  deriving (Eq, Show)
+
+volumeToText :: Volume -> Text
+volumeToText (Volume v) = v
