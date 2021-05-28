@@ -59,7 +59,7 @@ testRunSuccess runner = do
         [ makeStep "First Step" "ubuntu" ["date"],
           makeStep "Second Step" "ubuntu" ["uname -r"]
         ]
-  result <- runner.runBuild build
+  result <- runner.runBuild emptyHooks build
   result.state `shouldBe` BuildFinished BuildSucceeded
   Map.elems result.completedSteps `shouldBe` [StepSucceeded, StepSucceeded]
 
@@ -69,7 +69,7 @@ testRunFailure runner = do
     runner.prepareBuild $
       makePipeline
         [makeStep "Should Fail" "ubuntu" ["exit 1"]]
-  result <- runner.runBuild build
+  result <- runner.runBuild emptyHooks build
   result.state `shouldBe` BuildFinished BuildFailed
   Map.elems result.completedSteps `shouldBe` [StepFailed (Docker.ContainerExitCode 1)]
 
@@ -82,6 +82,12 @@ testSharedWorkspace docker runner = do
           makeStep "Read file" "ubuntu" ["cat test"]
         ]
 
-  result <- runner.runBuild build
+  result <- runner.runBuild emptyHooks build
   result.state `shouldBe` BuildFinished BuildSucceeded
   Map.elems result.completedSteps `shouldBe` [StepSucceeded, StepSucceeded]
+
+--
+
+emptyHooks :: Runner.Hooks
+emptyHooks =
+  Runner.Hooks {logCollected = \_ -> pure ()}
