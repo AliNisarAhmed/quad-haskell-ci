@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 09d6f5a0e207ed6f127f199dd80670cc6d1eabb965a9f9a9941b01c89be3a08a
+-- hash: 3438cf06259497c003d81fdf2b78825c600e3c0ba0f732e4db135c85d9204e2c
 
 name:           quad
 version:        0.0.0
@@ -20,7 +20,14 @@ library
       Paths_quad
   hs-source-dirs:
       src
-  default-extensions: BlockArguments DeriveAnyClass DeriveGeneric LambdaCase NoImplicitPrelude OverloadedStrings StrictData
+  default-extensions:
+      BlockArguments
+      DeriveAnyClass
+      DeriveGeneric
+      LambdaCase
+      NoImplicitPrelude
+      OverloadedStrings
+      StrictData
   ghc-options: -F -pgmF=record-dot-preprocessor
   build-depends:
       aeson
@@ -49,7 +56,14 @@ executable quad
       Paths_quad
   hs-source-dirs:
       app
-  default-extensions: BlockArguments DeriveAnyClass DeriveGeneric LambdaCase NoImplicitPrelude OverloadedStrings StrictData
+  default-extensions:
+      BlockArguments
+      DeriveAnyClass
+      DeriveGeneric
+      LambdaCase
+      NoImplicitPrelude
+      OverloadedStrings
+      StrictData
   ghc-options: -F -pgmF=record-dot-preprocessor -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
@@ -80,7 +94,14 @@ test-suite quad-test
       Paths_quad
   hs-source-dirs:
       test
-  default-extensions: BlockArguments DeriveAnyClass DeriveGeneric LambdaCase NoImplicitPrelude OverloadedStrings StrictData
+  default-extensions:
+      BlockArguments
+      DeriveAnyClass
+      DeriveGeneric
+      LambdaCase
+      NoImplicitPrelude
+      OverloadedStrings
+      StrictData
   ghc-options: -F -pgmF=record-dot-preprocessor -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
