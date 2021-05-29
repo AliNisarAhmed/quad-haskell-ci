@@ -10,6 +10,7 @@ import qualified RIO.ByteString as ByteString
 import qualified Runner
 import qualified System.Process.Typed as Process
 import Test.Hspec
+import qualified Data.Yaml as Yaml
 
 main :: IO ()
 main = hspec do
@@ -26,6 +27,8 @@ main = hspec do
       testLogCollection runner
     it "should pull images" do
       testImagePull runner
+    it "should decode pipelines" do
+      testYamlDecoding runner
 
 cleanupDocker :: IO ()
 cleanupDocker = void do
@@ -124,6 +127,14 @@ testImagePull runner = do
 
   result.state `shouldBe` BuildFinished BuildSucceeded
   Map.elems result.completedSteps `shouldBe` [StepSucceeded]
+
+testYamlDecoding :: Runner.Service -> IO ()
+testYamlDecoding runner = do
+  pipeline <- Yaml.decodeFileThrow "test/pipeline.sample.yaml"
+  build <- runner.prepareBuild pipeline
+  result <- runner.runBuild emptyHooks build
+  result.state `shouldBe` BuildFinished BuildSucceeded
+
 
 --
 
