@@ -21,6 +21,12 @@ data Step = Step
   }
   deriving (Eq, Show, Generic, Aeson.FromJSON)
 
+newtype BuildNumber = BuildNumber Int
+  deriving (Eq, Show)
+
+buildNumberToInt :: BuildNumber -> Int
+buildNumberToInt (BuildNumber n) = n
+
 data Build = Build
   { pipeline :: Pipeline,
     state :: BuildState,
