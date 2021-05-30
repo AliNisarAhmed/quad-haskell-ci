@@ -3,8 +3,6 @@ cabal-version: 1.12
 -- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
---
--- hash: 3438cf06259497c003d81fdf2b78825c600e3c0ba0f732e4db135c85d9204e2c
 
 name:           quad
 version:        0.0.0
@@ -12,9 +10,12 @@ build-type:     Simple
 
 library
   exposed-modules:
+      Agent
       Core
       Docker
+      JobHandler
       Runner
+      Server
       Socket
   other-modules:
       Paths_quad

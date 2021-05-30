@@ -9,6 +9,7 @@ import RIO
 import qualified RIO.Text as Text
 import qualified RIO.Text.Partial as Text.Partial
 import qualified Socket
+import qualified Codec.Serialise as Serialise
 
 type RequestBuilder = Text -> HTTP.Request
 
@@ -19,7 +20,7 @@ data CreateContainerOptions = CreateContainerOptions
   }
 
 newtype ContainerId = ContainerId Text
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, Serialise.Serialise)
 
 containerIdToText :: ContainerId -> Text
 containerIdToText (ContainerId c) = c
@@ -164,7 +165,7 @@ pullImage_ makeReq image = do
 
 -- -------------
 data Image = Image { name :: Text, tag :: Text }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, Serialise.Serialise)
 
 imageToText :: Image -> Text
 imageToText image = image.name <> ":" <> image.tag
@@ -177,7 +178,7 @@ instance Aeson.FromJSON Image where
       _ -> fail $ "Image has too many colons " <> Text.unpack image
 
 newtype ContainerExitCode = ContainerExitCode Int
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, Serialise.Serialise)
 
 exitCodeToInt :: ContainerExitCode -> Int
 exitCodeToInt (ContainerExitCode n) = n
@@ -189,7 +190,7 @@ data ContainerStatus
   deriving (Eq, Show)
 
 newtype Volume = Volume Text
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, Serialise.Serialise)
 
 volumeToText :: Volume -> Text
 volumeToText (Volume v) = v
