@@ -1,16 +1,20 @@
 module Main where
 
+import qualified Agent
+import qualified Control.Concurrent.Async as Async
 import Core
+import qualified Data.Yaml as Yaml
 import qualified Docker
+import qualified JobHandler
 import RIO
-import qualified RIO.Map as Map
-import qualified RIO.Set as Set
-import qualified RIO.NonEmpty.Partial as NonEmpty.Partial
 import qualified RIO.ByteString as ByteString
+import qualified RIO.Map as Map
+import qualified RIO.NonEmpty.Partial as NonEmpty.Partial
+import qualified RIO.Set as Set
 import qualified Runner
+import qualified Server
 import qualified System.Process.Typed as Process
 import Test.Hspec
-import qualified Data.Yaml as Yaml
 
 main :: IO ()
 main = hspec do
@@ -29,6 +33,8 @@ main = hspec do
       testImagePull runner
     it "should decode pipelines" do
       testYamlDecoding runner
+    it "should run server and agent" do
+      testServerAndAgent
 
 cleanupDocker :: IO ()
 cleanupDocker = void do
@@ -50,7 +56,7 @@ makeStep :: Text -> Text -> [Text] -> Step
 makeStep name image commands =
   Step
     { name = StepName name,
-      image = Docker.Image { name = image, tag = "latest" },
+      image = Docker.Image {name = image, tag = "latest"},
       commands = NonEmpty.Partial.fromList commands
     }
 
@@ -105,12 +111,14 @@ testLogCollection runner = do
           case ByteString.breakSubstring word log.output of
             (_, "") -> pure () -- Not Found
             _ -> modifyMVar_ expected (pure . Set.delete word)
-  let hooks = Runner.Hooks { logCollected = onLog }
+  let hooks = Runner.Hooks {logCollected = onLog}
 
-  build <- runner.prepareBuild $ makePipeline
-                                  [ makeStep "Long Step" "ubuntu" ["echo hello", "sleep 2", "echo world"]
-                                  , makeStep "Echo Linux" "ubuntu" ["uname -s"]
-                                  ]
+  build <-
+    runner.prepareBuild $
+      makePipeline
+        [ makeStep "Long Step" "ubuntu" ["echo hello", "sleep 2", "echo world"],
+          makeStep "Echo Linux" "ubuntu" ["uname -s"]
+        ]
   result <- runner.runBuild hooks build
   result.state `shouldBe` BuildFinished BuildSucceeded
   Map.elems result.completedSteps `shouldBe` [StepSucceeded, StepSucceeded]
@@ -120,9 +128,11 @@ testImagePull :: Runner.Service -> IO ()
 testImagePull runner = do
   Process.readProcessStdout "docker rmi -f busybox"
 
-  build <- runner.prepareBuild $ makePipeline
-              [ makeStep "First step" "busybox" ["date"]
-              ]
+  build <-
+    runner.prepareBuild $
+      makePipeline
+        [ makeStep "First step" "busybox" ["date"]
+        ]
   result <- runner.runBuild emptyHooks build
 
   result.state `shouldBe` BuildFinished BuildSucceeded
@@ -135,6 +145,42 @@ testYamlDecoding runner = do
   result <- runner.runBuild emptyHooks build
   result.state `shouldBe` BuildFinished BuildSucceeded
 
+testServerAndAgent :: IO ()
+testServerAndAgent = do
+  let handler = undefined :: JobHandler.Service
+
+  serverThread <- Async.async do
+    Server.run (Server.Config 9000) handler
+
+  Async.link serverThread
+
+  agentThread <- Async.async do
+    Agent.run (Agent.Config "http://localhost:9000") runner
+
+  Async.link agentThread
+
+  let pipeline = makePipeline [makeStep "agent-test" "busybox" ["echo hello", "echo from agent"]]
+
+  number <- handler.queueJob pipeline
+
+  checkBuild handler number
+
+  Async.cancel serverThread
+  Async.cancel agentThread
+
+  pure ()
+
+checkBuild :: JobHandler.Service -> BuildNumber -> IO ()
+checkBuild handler number = loop
+  where
+    loop = do
+      Just job <- handler.findJob number
+      case job.state of
+        JobHandler.JobScheduled build -> do
+          case build.state of
+            BuildFinished s -> s `shouldBe` BuildSucceeded
+            _ -> loop
+        _ -> loop
 
 --
 
