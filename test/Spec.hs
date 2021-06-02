@@ -6,6 +6,7 @@ import Core
 import qualified Data.Yaml as Yaml
 import qualified Docker
 import qualified JobHandler
+import qualified JobHandler.Memory
 import RIO
 import qualified RIO.ByteString as ByteString
 import qualified RIO.Map as Map
@@ -34,7 +35,7 @@ main = hspec do
     it "should decode pipelines" do
       testYamlDecoding runner
     it "should run server and agent" do
-      testServerAndAgent
+      testServerAndAgent runner
 
 cleanupDocker :: IO ()
 cleanupDocker = void do
@@ -145,9 +146,9 @@ testYamlDecoding runner = do
   result <- runner.runBuild emptyHooks build
   result.state `shouldBe` BuildFinished BuildSucceeded
 
-testServerAndAgent :: IO ()
-testServerAndAgent = do
-  let handler = undefined :: JobHandler.Service
+testServerAndAgent :: Runner.Service -> IO ()
+testServerAndAgent runner = do
+  handler <- JobHandler.Memory.createService
 
   serverThread <- Async.async do
     Server.run (Server.Config 9000) handler

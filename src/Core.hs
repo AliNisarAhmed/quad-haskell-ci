@@ -23,7 +23,7 @@ data Step = Step
   deriving (Eq, Show, Generic, Aeson.FromJSON, Serialise.Serialise)
 
 newtype BuildNumber = BuildNumber Int
-  deriving (Eq, Show, Generic, Serialise.Serialise)
+  deriving (Eq, Show, Ord, Generic, Serialise.Serialise)
 
 buildNumberToInt :: BuildNumber -> Int
 buildNumberToInt (BuildNumber n) = n
