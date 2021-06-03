@@ -39,6 +39,6 @@ run config runner = forever do
 runCommand :: Runner.Service -> Cmd -> IO ()
 runCommand runner = \case
   StartBuild number pipeline -> do
-    let hooks = Runner.Hooks {logCollected = traceShowIO}
+    let hooks = Runner.Hooks {logCollected = traceShowIO, buildUpdated = traceShowIO}
     build <- runner.prepareBuild pipeline
     void $ runner.runBuild hooks build

@@ -21,6 +21,7 @@ runBuild_ docker hooks build =
     loop build collection = do
       (newCollection, logs) <- Core.collectLogs docker collection build
       newBuild <- Core.progress docker build
+      hooks.buildUpdated newBuild
       traverse_ hooks.logCollected logs
       case newBuild.state of
         BuildFinished _ ->
@@ -44,4 +45,4 @@ prepareBuild_ docker pipeline = do
 
 ---
 
-data Hooks = Hooks {logCollected :: Log -> IO ()}
+data Hooks = Hooks {logCollected :: Log -> IO (), buildUpdated :: Build -> IO ()}
