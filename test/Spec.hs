@@ -112,7 +112,7 @@ testLogCollection runner = do
           case ByteString.breakSubstring word log.output of
             (_, "") -> pure () -- Not Found
             _ -> modifyMVar_ expected (pure . Set.delete word)
-  let hooks = Runner.Hooks {logCollected = onLog}
+  let hooks = Runner.Hooks {logCollected = onLog, buildUpdated = \_ -> pure ()}
 
   build <-
     runner.prepareBuild $
@@ -187,4 +187,4 @@ checkBuild handler number = loop
 
 emptyHooks :: Runner.Hooks
 emptyHooks =
-  Runner.Hooks {logCollected = \_ -> pure ()}
+  Runner.Hooks {logCollected = \_ -> pure (), buildUpdated = \_ -> pure ()}
