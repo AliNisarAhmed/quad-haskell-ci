@@ -7,10 +7,12 @@ import RIO
 import qualified Runner
 import qualified System.Log.Logger as Logger
 
+-- commands are sent by the server to the Agent
 data Cmd
   = StartBuild BuildNumber Pipeline
   deriving (Eq, Show, Generic, Serialise.Serialise)
 
+-- agent can send these messages to the server
 data Msg
   = LogCollected BuildNumber Log
   | BuildUpdated BuildNumber Build

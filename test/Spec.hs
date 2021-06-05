@@ -152,7 +152,7 @@ testYamlDecoding runner = do
   result.state `shouldBe` BuildFinished BuildSucceeded
 
 testServerAndAgent :: Runner.Service -> IO ()
-testServerAndAgent runner = do
+testServerAndAgent = do
   runServerAndAgent $ \handler -> do
     let pipeline = makePipeline [makeStep "agent-test" "busybox" ["echo hello", "echo from agent"]]
     number <- handler.queueJob pipeline
@@ -167,7 +167,7 @@ testWebhookTrigger =
             & HTTP.setRequestMethod "POST"
             & HTTP.setRequestPath "/webhook/github"
             & HTTP.setRequestBodyFile "test/github-payload.sample.json"
-    res <- HTTP.httpLBS req
+    res <- HTTP.httpBS req
     let Right (Aeson.Object build) = Aeson.eitherDecodeStrict $ HTTP.getResponseBody res
     let Just (Aeson.Number number) = HashMap.lookup "number" build
     checkBuild handler $ Core.BuildNumber (round number)
@@ -194,7 +194,7 @@ runServerAndAgent :: (JobHandler.Service -> IO ()) -> Runner.Service -> IO ()
 runServerAndAgent callback runner = do
   handler <- JobHandler.Memory.createService
   serverThread <- Async.async do
-    Server.run (Server.config 9000) handler
+    Server.run (Server.Config 9000) handler
 
   Async.link serverThread
 
