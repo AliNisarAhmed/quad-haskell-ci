@@ -30,14 +30,8 @@ runBuild_ docker hooks build =
           threadDelay (1 * 1000 * 1000)
           loop newBuild newCollection
 
--- runBuild_ docker hooks build = do
---   newBuild <- Core.progress docker build
---   case newBuild.state of
---     BuildFinished _ -> pure newBuild
---     _ -> do
---       threadDelay (1 * 1000 * 1000)
---       runBuild_ docker hooks newBuild
 
+-- sets up a volume for a build and initiates a build
 prepareBuild_ :: Docker.Service -> Pipeline -> IO Build
 prepareBuild_ docker pipeline = do
   volume <- docker.createVolume

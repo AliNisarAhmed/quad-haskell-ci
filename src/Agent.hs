@@ -21,6 +21,7 @@ data Msg
 data Config = Config
   {endpoint :: String}
 
+-- an Agent, constantly polls the server asking for any Cmd that it may have
 run :: Config -> Runner.Service -> IO ()
 run config runner = forever do
   endpoint <- HTTP.parseRequest config.endpoint

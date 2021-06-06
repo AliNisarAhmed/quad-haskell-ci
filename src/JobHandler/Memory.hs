@@ -33,6 +33,7 @@ createService = do
 data State = State
   { jobs :: Map BuildNumber JobHandler.Job,
     logs :: Map (BuildNumber, StepName) ByteString,
+    -- this acts like a SERIAL PK Id in Database, we increment it once for every buiod queued
     nextBuild :: Int
   }
   deriving (Eq, Show)

@@ -28,8 +28,8 @@ data CommitInfo = CommitInfo
   deriving (Eq, Show, Generic, Aeson.ToJSON)
 
 data Service = Service
-  { queueJob :: CommitInfo -> Pipeline -> IO BuildNumber,
-    dispatchCmd :: IO (Maybe Agent.Cmd),
+  { queueJob :: CommitInfo -> Pipeline -> IO BuildNumber, -- once a job is queued, it's an Agent's job to poll the server to ask for work
+    dispatchCmd :: IO (Maybe Agent.Cmd), -- checks the store and see if there is any command to be given to the polling Agent
     processMsg :: Agent.Msg -> IO (),
     findJob :: BuildNumber -> IO (Maybe Job),
     fetchLogs :: BuildNumber -> StepName -> IO (Maybe ByteString),

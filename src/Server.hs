@@ -21,6 +21,8 @@ run :: Config -> JobHandler.Service -> IO ()
 run config handler =
   Scotty.scotty config.port do
     Scotty.middleware Cors.simpleCors
+
+    -- this route is used by the agents to "poll" the server for any commands
     Scotty.post "/agent/pull" do
       cmd <- Scotty.liftAndCatchIO do
         handler.dispatchCmd
