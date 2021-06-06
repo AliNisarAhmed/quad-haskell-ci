@@ -6,6 +6,7 @@ import qualified Data.Aeson as Aeson
 import qualified Github
 import qualified JobHandler
 import qualified Network.HTTP.Types as HTTP.Types
+import qualified Network.Wai.Middleware.Cors as Cors
 import RIO
 import qualified RIO.Map as Map
 import qualified RIO.NonEmpty as NonEmpty
@@ -18,6 +19,7 @@ data Config = Config
 run :: Config -> JobHandler.Service -> IO ()
 run config handler =
   Scotty.scotty config.port do
+    Scotty.middleware Cors.simpleCors
     Scotty.post "/agent/pull" do
       cmd <- Scotty.liftAndCatchIO do
         handler.dispatchCmd
@@ -57,6 +59,11 @@ run config handler =
 
       log <- Scotty.liftAndCatchIO $ handler.fetchLogs number step
       Scotty.raw $ fromStrictBytes $ fromMaybe "" log
+
+    Scotty.get "/build" do
+      jobs <- Scotty.liftAndCatchIO do
+        handler.latestJobs
+      Scotty.json $ jobs <&> \(number, job) -> jobToJson number job
 
 jobToJson :: BuildNumber -> JobHandler.Job -> Aeson.Value
 jobToJson number job =
