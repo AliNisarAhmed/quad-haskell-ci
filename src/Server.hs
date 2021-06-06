@@ -11,6 +11,7 @@ import RIO
 import qualified RIO.Map as Map
 import qualified RIO.NonEmpty as NonEmpty
 import qualified Web.Scotty as Scotty
+import System.Log.Logger as Logger
 
 data Config = Config
   { port :: Int
@@ -37,9 +38,14 @@ run config handler =
       body <- Scotty.body
       number <- Scotty.liftAndCatchIO do
         info <- Github.parsePushEvent (toStrictBytes body)
+        Logger.infoM "quad.server" $ "info " <> show info
         pipeline <- Github.fetchRemotePipeline info
+        Logger.infoM "quad.server" $ "pipeline: " <> show pipeline
         let step = Github.createCloneStep info
-        handler.queueJob info $ pipeline {steps = NonEmpty.cons step pipeline.steps}
+        number <- handler.queueJob info $ pipeline {steps = NonEmpty.cons step pipeline.steps}
+        Logger.infoM "quad.server" $ "Queued job " <> Core.displayBuildNumber number
+        pure number
+
       Scotty.json $ Aeson.object [("number", Aeson.toJSON $ Core.buildNumberToInt number), ("status", "job queued")]
 
     Scotty.get "/build/:number" do

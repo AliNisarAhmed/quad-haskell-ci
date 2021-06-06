@@ -1,5 +1,7 @@
 module Core where
 
+import qualified Codec.Serialise as Serialise
+import qualified Data.Aeson as Aeson
 import qualified Data.Time.Clock.POSIX as Time
 import qualified Docker
 import RIO
@@ -7,8 +9,6 @@ import qualified RIO.List as List
 import qualified RIO.Map as Map
 import qualified RIO.NonEmpty as NonEmpty
 import qualified RIO.Text as Text
-import qualified Data.Aeson as Aeson
-import qualified Codec.Serialise as Serialise
 
 data Pipeline = Pipeline
   { steps :: NonEmpty Step
@@ -187,3 +187,6 @@ runCollection docker collectUntil collection = do
                 }
         output <- docker.fetchLogs options
         pure [Log {step = step, output = output}]
+
+displayBuildNumber :: BuildNumber -> String
+displayBuildNumber number = "#" <> show (buildNumberToInt number)
