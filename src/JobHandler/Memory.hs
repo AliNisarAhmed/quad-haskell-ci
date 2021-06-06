@@ -13,8 +13,8 @@ createService = do
   state <- STM.newTVarIO State {jobs = mempty, nextBuild = 1, logs = mempty}
   pure
     JobHandler.Service
-      { queueJob = \pipeline -> STM.atomically do
-          STM.stateTVar state $ queueJob_ pipeline,
+      { queueJob = \info pipeline -> STM.atomically do
+          STM.stateTVar state $ queueJob_ info pipeline,
         findJob = \number -> STM.atomically do
           s <- STM.readTVar state
           pure $ findJob_ number s,
@@ -39,12 +39,12 @@ data State = State
 
 ----
 
-queueJob_ :: Pipeline -> State -> (BuildNumber, State)
-queueJob_ pipeline state =
+queueJob_ :: JobHandler.CommitInfo -> Pipeline -> State -> (BuildNumber, State)
+queueJob_ info pipeline state =
   (number, updatedState)
   where
     number = BuildNumber state.nextBuild
-    job = JobHandler.Job {pipeline = pipeline, state = JobHandler.JobQueued}
+    job = JobHandler.Job {pipeline = pipeline, state = JobHandler.JobQueued, info = info}
     updatedState = state {jobs = Map.insert number job state.jobs, nextBuild = state.nextBuild + 1}
 
 findJob_ :: BuildNumber -> State -> Maybe JobHandler.Job

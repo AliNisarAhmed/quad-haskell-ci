@@ -39,7 +39,7 @@ run config handler =
         info <- Github.parsePushEvent (toStrictBytes body)
         pipeline <- Github.fetchRemotePipeline info
         let step = Github.createCloneStep info
-        handler.queueJob $ pipeline {steps = NonEmpty.cons step pipeline.steps}
+        handler.queueJob info $ pipeline {steps = NonEmpty.cons step pipeline.steps}
       Scotty.json $ Aeson.object [("number", Aeson.toJSON $ Core.buildNumberToInt number), ("status", "job queued")]
 
     Scotty.get "/build/:number" do
@@ -70,6 +70,7 @@ jobToJson number job =
   Aeson.object
     [ ("number", Aeson.toJSON $ Core.buildNumberToInt number),
       ("state", Aeson.toJSON $ jobStateToText job.state),
+      ("info", Aeson.toJSON job.info),
       ("steps", Aeson.toJSON steps)
     ]
   where

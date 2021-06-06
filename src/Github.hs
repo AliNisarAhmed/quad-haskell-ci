@@ -10,6 +10,7 @@ import qualified JobHandler
 import qualified Network.HTTP.Simple as HTTP
 import RIO
 import qualified RIO.NonEmpty.Partial as NonEmpty.Partial
+import qualified RIO.Text as Text
 
 createCloneStep :: JobHandler.CommitInfo -> Step
 createCloneStep info =
@@ -40,8 +41,18 @@ parsePushEvent body = do
         commit <- event .: "head_commit"
         sha <- commit .: "id"
         repo <- event .: "repository" >>= \r -> r .: "full_name"
+        branch <- event .: "ref" <&> \ref -> Text.dropPrefix "refs/heads/" ref
+        message <- commit .: "message"
+        author <- commit .: "author" >>= \a -> a .: "username"
 
-        pure JobHandler.CommitInfo {sha = sha, repo = repo}
+        pure
+          JobHandler.CommitInfo
+            { sha = sha,
+              repo = repo,
+              message = message,
+              branch = branch,
+              author = author
+            }
   let result = do
         value <- Aeson.eitherDecodeStrict body
         Aeson.Types.parseEither parser value
